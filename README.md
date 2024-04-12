@@ -4,7 +4,14 @@
 
 TODO: Description.
 
-
+```
+wget https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/archive/refs/heads/main.zip
+unzip main.zip "dbus-fronius-smart-meter-with-phase1-injection/*" -d /data
+mv /data/dbus-fronius-smart-meter-with-phase1-injection /data/dbus-fronius-smart-meter-with-phase1-injection
+chmod a+x /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
+/data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
+rm main.zip
+```
 
 #original description
 Integrate Fronis Meter smart meter into [Victron Energies Venus OS](https://github.com/victronenergy/venus)
@@ -67,10 +74,10 @@ After that call the install.sh script.
 The following script should do everything for you:
 ```
 wget https://github.com/ayasystems/dbus-fronius-smart-meter/archive/refs/heads/main.zip
-unzip main.zip "dbus-fronius-smart-meter-main/*" -d /data
-mv /data/dbus-fronius-smart-meter-main /data/dbus-fronius-smart-meter
-chmod a+x /data/dbus-fronius-smart-meter/install.sh
-/data/dbus-fronius-smart-meter/install.sh
+unzip main.zip "dbus-fronius-smart-meter-with-phase1-injection/*" -d /data
+mv /data/dbus-fronius-smart-meter-with-phase1-injection /data/dbus-fronius-smart-meter-with-phase1-injection
+chmod a+x /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
+/data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
 rm main.zip
 ```
 ⚠️ Check configuration after that - because service is already installed an running and with wrong connection data (host, username, pwd) you will spam the log-file
