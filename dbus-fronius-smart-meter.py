@@ -100,6 +100,18 @@ class DbusFroniusMeterService:
     
     return URL
     
+  def _getShellyPlugDataUrl(self):
+    config = self._getConfig()
+    accessType = config['DEFAULT']['AccessType']
+    
+    if accessType == 'OnPremise': 
+        #URL = "http://%s:%s@%s/status" % (config['ONPREMISE']['Username'], config['ONPREMISE']['Password'], config['ONPREMISE']['Host'])
+        URL = "http://%s/status" % (config['ONPREMISE']['HostPlug'])
+        #URL = URL.replace(":@", "")
+    else:
+        raise ValueError("AccessType %s is not supported" % (config['DEFAULT']['AccessType']))
+    
+    return URL
  
   def _getFroniusData(self):
     URL = self._getFroniusDataUrl()
@@ -113,11 +125,25 @@ class DbusFroniusMeterService:
     
     # check for Json
     if not meter_data:
-        raise ValueError("Converting response to JSON failed")
-    
+        raise ValueError("Converting response to JSON failed on Fronius")
     
     return meter_data
  
+  def _getShellyPlugData(self):
+    URL = self._getShellyPlugDataUrl()
+    meter_r = requests.get(url = URL)
+    
+    # check for response
+    if not meter_r:
+        raise ConnectionError("No response from ShellyPlug - %s" % (URL))
+    
+    meter_data = meter_r.json()     
+    
+    # check for Json
+    if not meter_data:
+        raise ValueError("Converting response to JSON failed on Shelly Plug")
+    
+    return meter_data
  
   def _signOfLife(self):
     logging.info("--- Start: sign of life ---")
@@ -130,6 +156,7 @@ class DbusFroniusMeterService:
     try:
        #get data from Fronius
        meter_data = self._getFroniusData()
+       plug_data = self._getShellyPlugData()
        """       
        #send data to DBus
        self._dbusservice['/Ac/Power'] = meter_data['total_power'] # positive: consumption, negative: feed into grid
@@ -154,17 +181,9 @@ class DbusFroniusMeterService:
        meter_consumption = meter_data['Body']['Data']['PowerReal_P_Sum']
        meter_voltage = meter_data['Body']['Data']['Voltage_AC_Phase_1']
        meter_model = meter_data['Body']['Data']['Details']['Model']
-       if meter_model == 'Smart Meter TS 100A-1' or meter_model == 'Smart Meter 63A-1'  :  # set values for single phase meter
-        meter_data['Body']['Data']['Voltage_AC_Phase_2'] = None
-        meter_data['Body']['Data']['Voltage_AC_Phase_3'] = None
-        meter_data['Body']['Data']['Current_AC_Phase_2'] = None
-        meter_data['Body']['Data']['Current_AC_Phase_3'] = None
-        meter_data['Body']['Data']['PowerReal_P_Phase_2'] = None
-        meter_data['Body']['Data']['PowerReal_P_Phase_3'] = None
-        self._dbusservice['/Ac/L2/Energy/Forward'] = None
-        self._dbusservice['/Ac/L2/Energy/Reverse'] = None
-        self._dbusservice['/Ac/L3/Energy/Forward'] = None
-        self._dbusservice['/Ac/L3/Energy/Reverse'] = None       
+
+       plug_power = plug_data['meters'][0]['power']
+
        self._dbusservice['/Ac/Power'] = meter_consumption  # positive: consumption, negative: feed into grid 
        self._dbusservice['/Ac/Voltage'] = meter_voltage
        self._dbusservice['/Ac/Current'] = meter_data['Body']['Data']['Current_AC_Phase_1']
@@ -174,8 +193,14 @@ class DbusFroniusMeterService:
        self._dbusservice['/Ac/L1/Current'] = meter_data['Body']['Data']['Current_AC_Phase_1']
        self._dbusservice['/Ac/L2/Current'] = meter_data['Body']['Data']['Current_AC_Phase_2']
        self._dbusservice['/Ac/L3/Current'] = meter_data['Body']['Data']['Current_AC_Phase_3']
-       self._dbusservice['/Ac/L1/Power'] = meter_data['Body']['Data']['PowerReal_P_Phase_1']
-       self._dbusservice['/Ac/L2/Power'] = meter_data['Body']['Data']['PowerReal_P_Phase_2']
+
+       # When the Fronius hybrid is also trying to feed in from it's battery, it will interfer with ESS.
+       # So, We are going to manipulate the phase 1s display value here, as ESS needs to be targeting L1 as setpoint.
+       # to correctly feed in the amount required by it's critical loads. 
+       # Actual Phase 1 Grid-Consumption will be added to phase 2. 
+       # Shelly power will be deducted from phase 2, so the overall consumption stays "correct", just appearing on different phases.
+       self._dbusservice['/Ac/L1/Power'] = plug_power
+       self._dbusservice['/Ac/L2/Power'] = meter_data['Body']['Data']['PowerReal_P_Phase_2'] + meter_data['Body']['Data']['PowerReal_P_Phase_1'] - plug_power
        self._dbusservice['/Ac/L3/Power'] = meter_data['Body']['Data']['PowerReal_P_Phase_3']
        self._dbusservice['/Ac/L1/Energy/Forward'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Consumed'])/1000 
        self._dbusservice['/Ac/L1/Energy/Reverse'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Produced'])/1000  
