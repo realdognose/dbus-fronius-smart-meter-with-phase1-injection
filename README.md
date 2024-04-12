@@ -6,8 +6,8 @@ TODO: Description.
 
 ```
 wget https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/archive/refs/heads/main.zip
-unzip main.zip "dbus-fronius-smart-meter-with-phase1-injection/*" -d /data
-mv /data/dbus-fronius-smart-meter-with-phase1-injection /data/dbus-fronius-smart-meter-with-phase1-injection
+unzip main.zip "dbus-fronius-smart-meter-with-phase1-injection-main/*" -d /data
+mv /data/dbus-fronius-smart-meter-with-phase1-injection-main /data/dbus-fronius-smart-meter-with-phase1-injection
 chmod a+x /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
 /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
 rm main.zip
