@@ -75,11 +75,13 @@ https://github.com/ayasystems/dbus-fronius-smart-meter
  
 # ⚠️ ⚠️ ⚠️ Important ⚠️ ⚠️ ⚠️ 
 This hack fixes the ESS not beeing able to determine it's required Feed-In when running behind a fronius hybrid inverter with a battery. 
-There is a second Issue with that layout: When the fronius is providing battery power during night, ESS will not discharge it's own battery,
-because it thinks there is enough PV-Power available.
+There is a second Issue with that layout: When the fronius is providing battery power at the end of the night, when the scheduled loading window for ESS kicks in, it will start directly charging of the hybrids battery feed, because ESS sees that there is "enough PV Input available".
 
 I've made a second script that corrects the readings for the hybrid inverter (disable the original victron implementation) by injecting another
 regular PV-Inverter and a generater on the AC-side that mimics the battery-feed-in rather than showing it as PV-Output.
+
+ESS will now wait until the PV inverters now start to produce REAL PV Feed-In. 
+
 See here: ⚠️TODO⚠️
 
 (The script to split up the hibrid inverter into regular PV-Inverter plus generator can be used without this phase manipulation script)
