@@ -24,7 +24,9 @@ Final Result:
 - ESS is now able to correctly feed in 290W as consumed by it's critical loads. 
 - Hybrid-Inverter will balance the load on the actual smartmeter without having the multigrid react to it as well.
 
-⚠️TODO: pic.⚠️
+![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/resultFeedIn.png)
+
+Using a grid setpoint of 30W for the ESS ensures a "slight" energy flow from my houes main grid towards the ESS-Island.
 
 # Installation.
 
