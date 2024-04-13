@@ -1,5 +1,7 @@
 # dbus-fronius-smart-meter with Phase 1 Hack
 
+⚠️ Only usable with a Single-Phase System, where the actual values of L2 and L3 doesn't matter to ESS ⚠️
+
 This is a fork of the original dbus-fronius-smart-meter repository. I'm running ESS on a victron with a *dedicated* battery behind
 a fronius hybrid inverter with it's own battery. The subgrid Multigrid inverter should take over supply of it's attached loads during
 nighttime to increase the runtime of the hybrid's battery. With usual smart-meter readings this leads to both inverters / batteries
