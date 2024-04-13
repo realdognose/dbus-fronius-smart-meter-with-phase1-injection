@@ -15,7 +15,7 @@ rm main.zip
 
 ---
 
-# original description
+# original description (outdated by now)
 Integrate Fronis Meter smart meter into [Victron Energies Venus OS](https://github.com/victronenergy/venus)
 
 ![image](https://user-images.githubusercontent.com/7864168/179211755-434ad49f-0f82-4b31-8ab3-e293f7d33c3c.png)
