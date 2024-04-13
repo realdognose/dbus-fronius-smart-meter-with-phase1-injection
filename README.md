@@ -78,7 +78,8 @@ This hack fixes the ESS not beeing able to determine it's required Feed-In when 
 There is a second Issue with that layout: When the fronius is providing battery power during night, ESS will not discharge it's own battery,
 because it thinks there is enough PV-Power available.
 
-I've made a second script that corrects the readings for the hybrid inverter (disable the original victron implementation) and shows the battery
-as a AC-connected generator instead. See here: ⚠️TODO⚠️
+I've made a second script that corrects the readings for the hybrid inverter (disable the original victron implementation) by injecting another
+regular PV-Inverter and a generater on the AC-side that mimics the battery-feed-in rather than showing it as PV-Output.
+See here: ⚠️TODO⚠️
 
 (The script to split up the hibrid inverter into regular PV-Inverter plus generator can be used without this phase manipulation script)
