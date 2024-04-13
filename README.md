@@ -13,7 +13,7 @@ illustrates:
 In Order to achieve this, the Script performs the following manipulation on the actual Smart-Meters values: 
 
 - Value of L1 is replaced with the value measured by the shelly Plug. This allows the Multigrid-ESS to work on L1 as grid set point, without "fighting" against the Fronius Hybrid.
-- Original Value of L1 is added to L2.
+- Original Value of L1 is added to L2. Make sure you configure ESS to work in individual phase mode, so it only considers "L1".
 - Value measured by the shelly plug is deducted from L2, so the incoming/outgoing total stays the same. 
 
 Example before / After: 
