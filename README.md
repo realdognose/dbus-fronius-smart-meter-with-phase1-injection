@@ -1,8 +1,32 @@
 # dbus-fronius-smart-meter with Phase 1 Hack
 
+This is a fork of the original dbus-fronius-smart-meter repository. I'm running ESS on a victron with a *dedicated* battery behind
+a fronius hybrid inverter with it's own battery. The subgrid Multigrid inverter should take over supply of it's attached loads during
+nighttime to increase the runtime of the hybrid's battery. With usual smart-meter readings this leads to both inverters / batteries
+trying to go up and down on their feed-in values, both trying to zero out consumption at the feed in point. 
 
+So, I've added a Shelly Plug in Front of the Multigrid-Inverter and wanted the Multigrid to only zero out "that" consumption, as the following image
+illustrates: 
 
-# TODO: Description.
+![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/plug_position.png)
+
+In Order to achieve this, the Script performs the following manipulation on the actual Smart-Meters values: 
+
+- Value of L1 is replaced with the value measured by the shelly Plug. This allows the Multigrid-ESS to work on L1 as grid set point, without "fighting" against the Fronius Hybrid.
+- Original Value of L1 is added to L2.
+- Value measured by the shelly plug is deducted from L2, so the incoming/outgoing total stays the same. 
+
+Example before / After: 
+
+![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/manipulated_readings.png)
+
+Final Result: 
+- ESS is now able to correctly feed in 290W as consumed by it's critical loads. 
+- Hybrid-Inverter will balance the load on the actual smartmeter without having the multigrid react to it as well.
+
+TODO: pic.
+
+# Installation.
 
 ```
 wget https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/archive/refs/heads/main.zip
@@ -12,97 +36,27 @@ chmod a+x /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
 /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
 rm main.zip
 ```
-
----
-
-# original description (outdated by now)
-Integrate Fronis Meter smart meter into [Victron Energies Venus OS](https://github.com/victronenergy/venus)
-
-![image](https://user-images.githubusercontent.com/7864168/179211755-434ad49f-0f82-4b31-8ab3-e293f7d33c3c.png)
-
-![image](https://user-images.githubusercontent.com/7864168/179207965-218cf519-f7f6-41af-8c24-e4446c434010.png)
-
-
-## Purpose
-With the scripts in this repo it should be easy possible to install, uninstall, restart a service that connects the Fronis Meter to the VenusOS and GX devices from Victron.
-Idea is pasend on @RalfZim project linked below.
-
-
-
-## Inspiration
-This project is my first on GitHub and with the Victron Venus OS, so I took some ideas and approaches from the following projects - many thanks for sharing the knowledge:
-- https://github.com/fabian-lauer/dbus-shelly-3em-smartmeter (thanks a lot)
-- https://github.com/RalfZim/venus.dbus-fronius-smartmeter
-- https://github.com/victronenergy/dbus-smappee
-- https://github.com/Louisvdw/dbus-serialbattery
-- https://community.victronenergy.com/questions/85564/eastron-sdm630-modbus-energy-meter-community-editi.html
-
-
-
-## How it works
-### My setup
-- Fronius Primo 5 with Smart Meter TS 100A-1
-  - 1-Phase installation (normal for Spain)
-  - Wired connected
-  
-- Raspberry Pi 4 with Venus OS - Firmware v2.90-17
-  - No other devices from Victron connected  
-  - Wired connected
- 
-
-### Details / Process
-As mentioned above the script is inspired by @RalfZim fronius smartmeter implementation.
-So what is the script doing:
-- Running as a service
-- connecting to DBus of the Venus OS `com.victronenergy.grid.http_40`
-- After successful DBus connection Fronis Meter is accessed via REST-API 
-  A sample JSON file from Fronis Meter can be found [here](docs/GetMeterRealtimeData.json)
-- Serial is taken from the response as device serial
-- Paths are added to the DBus with default value 0 - including some settings like name, etc
-- After that a "loop" is started which pulls Fronis Meter data every 800ms (can be modified in the settings file)  from the REST-API and updates the values in the DBus
-
-Thats it 😄
-
-
-
-
-
-
-## Install & Configuration
-### Get the code
-Just grap a copy of the main branche and copy them to `/data/dbus-fronius-smart-meter`.
-After that call the install.sh script.
-
-The following script should do everything for you:
-```
-wget https://github.com/ayasystems/dbus-fronius-smart-meter/archive/refs/heads/main.zip
-unzip main.zip "dbus-fronius-smart-meter-with-phase1-injection/*" -d /data
-mv /data/dbus-fronius-smart-meter-with-phase1-injection /data/dbus-fronius-smart-meter-with-phase1-injection
-chmod a+x /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
-/data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
-rm main.zip
-```
 ⚠️ Check configuration after that - because service is already installed an running and with wrong connection data (host, username, pwd) you will spam the log-file
 ### Stop service
 ```
-svc -d /service/dbus-fronius-smart-meter
+svc -d /service/dbus-fronius-smart-meter-with-phase1-injection
 ```
 ### Start service
 ```
-svc -u /service/dbus-fronius-smart-meter
+svc -u /service/dbus-fronius-smart-meter-with-phase1-injection
 ```
 ### Reload data
 ```
-/data/dbus-fronius-smart-meter/restart.sh
+/data/dbus-fronius-smart-meter-with-phase1-injection/restart.sh
 ```
 ### View log file
 ```
-cat /data/dbus-fronius-smart-meter/current.log
+cat /data/dbus-fronius-smart-meter-with-phase1-injection/current.log
 ```
 ### Change config.ini
 Within the project there is a file `/data/dbus-fronius-smart-meter/config.ini` - just change the values - most important is the host, username and password in section "ONPREMISE". More details below:
 
-Afther change the config file execute restart.sh to reload new settings [how to](https://github.com/ayasystems/dbus-fronius-smart-meter/blob/main/README.md#reload-data)
+Afther change the config file execute restart.sh to reload new settings 
 
 | Section  | Config vlaue | Explanation |
 | ------------- | ------------- | ------------- |
@@ -111,13 +65,11 @@ Afther change the config file execute restart.sh to reload new settings [how to]
 | ONPREMISE  | Host | IP or hostname of on-premise Fronis Meter web-interface |
 | ONPREMISE  | MeterID  | Your meter ID
 | ONPREMISE  | intervalMs  | Interval time in ms to get data from Fronius
+| ONPREMISE  | HostPlug  | IP of the shelly plug. Currently only unprotected http-access supported.
+---
 
-![image](https://user-images.githubusercontent.com/7864168/179208083-80d7b07e-3985-4922-b5b8-bd56d65ba31c.png)
+# original description
 
-
-## Used documentation
-- https://github.com/victronenergy/venus/wiki/dbus#grid   DBus paths for Victron namespace
-- https://github.com/victronenergy/venus/wiki/dbus-api   DBus API from Victron
-- https://www.victronenergy.com/live/ccgx:root_access   How to get root access on GX device/Venus OS
-
+For information about additional configuration, please view the original smart meter readout repository at: 
+https://github.com/ayasystems/dbus-fronius-smart-meter
  
