@@ -24,7 +24,7 @@ Final Result:
 - ESS is now able to correctly feed in 290W as consumed by it's critical loads. 
 - Hybrid-Inverter will balance the load on the actual smartmeter without having the multigrid react to it as well.
 
-TODO: pic.
+⚠️TODO: pic.⚠️
 
 # Installation.
 
@@ -73,3 +73,12 @@ Afther change the config file execute restart.sh to reload new settings
 For information about additional configuration, please view the original smart meter readout repository at: 
 https://github.com/ayasystems/dbus-fronius-smart-meter
  
+# ⚠️ ⚠️ ⚠️ Important ⚠️ ⚠️ ⚠️ 
+This hack fixes the ESS not beeing able to determine it's required Feed-In when running behind a fronius hybrid inverter with a battery. 
+There is a second Issue with that layout: When the fronius is providing battery power during night, ESS will not discharge it's own battery,
+because it thinks there is enough PV-Power available.
+
+I've made a second script that corrects the readings for the hybrid inverter (disable the original victron implementation) and shows the battery
+as a AC-connected generator instead. See here: ⚠️TODO⚠️
+
+(The script to split up the hibrid inverter into regular PV-Inverter plus generator can be used without this phase manipulation script)
