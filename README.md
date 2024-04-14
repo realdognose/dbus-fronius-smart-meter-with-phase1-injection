@@ -90,6 +90,6 @@ regular PV-Inverter and a generater on the AC-side that mimics the battery-feed-
 
 ESS will now wait until the PV inverters now start to produce REAL PV Feed-In. 
 
-See here: ⚠️TODO⚠️
+See here: https://github.com/realdognose/dbus-fronius-hybrid-battery-visualisation
 
 (The script to split up the hibrid inverter into regular PV-Inverter plus generator can be used without this phase manipulation script)
