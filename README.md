@@ -18,7 +18,7 @@ This script reads a fronius smartmeter from the inverts solar-api and manipulate
 
 - Value of L1 will be replaced with the actual consumption of the ESS subgrid - so ESS can cancel out that consumption. 
 - When there is solar overhead available, the value L1 will be adjust to a virtual feedin, so ESS starts to charge the desired amount. 
-- In either case, the original value of L1 is added to L2 and the artificial value L1' is deducted from L2, so the overall Consumption stays correct. 
+- In either case, the original value of L1 is added to L2 and the artificial value "L4" is deducted from L2, so the overall consumption stays correct. 
 - Currents then are recalculated to match the displayed power based on the original voltage. 
 - It can be configured how much of available solar overheat the ESS should steal from the fronius hybrid ;)
 
