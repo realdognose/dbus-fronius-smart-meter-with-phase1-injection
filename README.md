@@ -43,7 +43,7 @@ chmod a+x /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
 /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
 rm main.zip
 ```
-⚠️ Check configuration after that - because service is already installed an running and with wrong connection data (host, username, pwd) you will spam the log-file
+⚠️ Check configuration after that - because service is already installed an running and with wrong data you will spam the log-file
 ### Stop service
 ```
 svc -d /service/dbus-fronius-smart-meter-with-phase1-injection
