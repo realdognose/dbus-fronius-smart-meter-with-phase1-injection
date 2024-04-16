@@ -27,7 +27,7 @@ From dusk till dawn, the value presented as L1 will equal the victron inverters 
 with a grid set point of 35 Watts, so a tiny bit of energy will always flow from the main-grid to the sub grid. ESS will feed in enough from it's own 
 battery to satisfy it's own critical loads needs: 
 
-This mode is entered, when the battery discharge of the hybrid inverters battery is greater than 100 watts.
+This mode is entered, when there is < 100 Watts PV-Feedin available, i.e. the hybrid batterie is already discharging and supplying all loads. 
 
 | ![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/ControlledDischarge.png) | 
 |:--:| 
