@@ -40,11 +40,11 @@ first, because it is only capable of charging with ~ 450 Watts, so it should get
 
 100% of the available PV-Overheat woll now be requested by ESS, first. This is achieved by setting L1 to a manipulated `-600` so ESS will start to 
 act and balance on it's AC-IN until L1 will reach about `-150` and the battery charge rate 450 Watts. The script will take care to take the actual 
-loads into account and recalculate a proper L1 value every cycle.
+loads as well as actual available PV-Overhead into account and recalculate a proper L1 value every cycle.
 
 | TODO:Image | 
 |:--:| 
-| *Controlled charge, bymanipulating L1 to simulate available PV-Overhead* |
+| *Controlled charge, by manipulating L1 to simulate available PV-Overhead* |
 
 # Example Three, Balance PV Overheat evenly
 
