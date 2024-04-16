@@ -23,8 +23,9 @@ This script reads a fronius smartmeter from the inverts solar-api and manipulate
 - It can be configured how much of available solar overheat the ESS should steal from the fronius hybrid ;)
 
 # Example One, Controlled discharge: 
-From dusk till dawn, the value presented as L1 will equal the victron inverters AC-IN Value. In this example ESS is working with a grid set point of 35 Watts, 
-so a tiny bit of energy will always flow from the main-grid to the sub grid. ESS will feed in enough from it's own battery to satisfy it's own critical loads needs: 
+From dusk till dawn, the value presented as L1 will equal the victron inverters *AC-IN Value minus ESS Battery Feed-In*. In this example ESS is working 
+with a grid set point of 35 Watts, so a tiny bit of energy will always flow from the main-grid to the sub grid. ESS will feed in enough from it's own 
+battery to satisfy it's own critical loads needs: 
 
 This mode is entered, when the battery discharge of the hybrid inverters battery is greater than 100 watts.
 
@@ -33,8 +34,16 @@ This mode is entered, when the battery discharge of the hybrid inverters battery
 | *Controlled discharge from dusk till dawn* |
 
 # Example Two, Charge ESS first
+In the config file, two values can be set: `SolarOverheadShare` and `SolarOverheadLimit`. In this Example, we want the ESS battery to charge
+first, because it is only capable of charging with ~ 450 Watts, so it should get precedence above the hybrid inverter who can charge with around
+7000 Watts. Therefore, we configure `SolarOverheadShare=1`  and `SolarOverheadLimit=600`. 
 
-TODO
+100% of the available PV-Overheat woll now be requested by ESS, first. This is achieved by setting L1 to a manipulated `-600` so ESS will start to 
+act and balance on it's AC-IN until L1 will reach about `-150` and the battery charge rate 450 Watts.
+
+| TODO:Image | 
+|:--:| 
+| *Controlled charge, bymanipulating L1 to simulate available PV-Overhead* |
 
 # Example Three, Balance PV Overheat evenly
 
