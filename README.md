@@ -1,5 +1,7 @@
 # dbus-fronius-smart-meter with Phase 1 Hack
 
+⚠️ ⚠️ ⚠️ Work in Progress, not yet 100% ⚠️ ⚠️ ⚠️ 
+
 ⚠️ Only usable with a Single-Phase System, where the actual values of L2 and L3 doesn't matter *for ESS* ⚠️
 
 This is a fork of the original dbus-fronius-smart-meter repository. I'm running ESS on a victron with a *dedicated* battery behind
@@ -7,32 +9,12 @@ a fronius hybrid inverter with it's own battery. The subgrid Multigrid inverter 
 nighttime to increase the runtime of the hybrid's battery. With usual smart-meter readings this leads to both inverters / batteries
 trying to go up and down on their feed-in values, both trying to zero out consumption at the feed in point. 
 
-So, I've added a Shelly Plug in Front of the Multigrid-Inverter and wanted the Multigrid to only zero out "that" consumption, as the following image
-illustrates: 
+This script reads a fronius smartmeter from the inverts solar-api and manipulates the readings in the following way: 
 
-![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/plug_position.png)
-
-In Order to achieve this, the Script performs the following manipulation on the actual Smart-Meters values: 
-
-- Value of L1 is replaced with the value measured by the shelly Plug. This allows the Multigrid-ESS to work on L1 as grid set point, without "fighting" against the Fronius Hybrid. **Make sure you configure ESS to work in individual phase mode, so it only considers "L1".**
-- Original Value of L1 is added to L2. 
-- Value measured by the shelly plug is deducted from L2, so the incoming/outgoing total stays the same. 
-
-Example before / After: 
-
-![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/manipulated_readings.png)
-
-Final Result: 
-- ESS is now able to correctly feed in "the value of the shelly Plug" as consumed by it's critical loads. 
-- Hybrid-Inverter will balance the load on the actual smartmeter without having the multigrid react to it as well.
-- Using a grid setpoint of 30W for the ESS ensures a "slight" energy flow from my houes main grid towards the ESS-Island.
-
-![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/resultFeedIn.png)
-
-Example config: 
-
-![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/exampleConfig.png)
-
+- Value of L1 will be replaced with the actual consumption of the ESS subgrid - so ESS can cancel out that consumption. 
+- When there is solar overhead available, the value L1 will be adjust to a virtual feedin, so ESS starts to charge the desired amount. 
+- In either case, the original value of L1 is added to L2 and the artificial value L1' is deducted from L2, so the overall Consumption stays correct. 
+- Currents then are recalculated to match the displayed power based on the original voltage. 
 
 # Installation.
 
@@ -66,14 +48,6 @@ Within the project there is a file `/data/dbus-fronius-smart-meter-with-phase1-i
 
 Afther change the config file execute restart.sh to reload new settings 
 
-| Section  | Config vlaue | Explanation |
-| ------------- | ------------- | ------------- |
-| DEFAULT  | AccessType | Fixed value 'OnPremise' |
-| DEFAULT  | SignOfLifeLog  | Time in minutes how often a status is added to the log-file `current.log` with log-level INFO |
-| ONPREMISE  | Host | IP or hostname of on-premise Fronis Meter web-interface |
-| ONPREMISE  | MeterID  | Your meter ID
-| ONPREMISE  | intervalMs  | Interval time in ms to get data from Fronius
-| ONPREMISE  | HostPlug  | IP of the shelly plug. Currently only unprotected http-access supported.
 ---
 
 # original description
