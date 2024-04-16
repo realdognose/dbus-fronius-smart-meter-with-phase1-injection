@@ -5,8 +5,8 @@
 ⚠️ Only usable with a Single-Phase System, where the actual values of L2 and L3 doesn't matter *for ESS* ⚠️
 
 This is a fork of the original dbus-fronius-smart-meter repository. I'm running ESS on a victron with a *dedicated* battery behind
-a fronius hybrid inverter with it's own battery. The subgrid Multigrid inverter should take over supply of it's attached loads during
-nighttime to increase the runtime of the hybrid's battery. With usual smart-meter readings this leads to both inverters / batteries
+a fronius hybrid inverter with it's own battery. The *subgrid*s inverter (victron multigrid) should take over supply of it's attached loads during
+nighttime to increase the runtime of the hybrids battery. With usual smart-meter readings this leads to both inverters / batteries
 trying to go up and down on their feed-in values, both trying to zero out consumption at the feed in point. 
 
 | ![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/Schema.png) | 
