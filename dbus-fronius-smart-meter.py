@@ -52,7 +52,7 @@ class DbusFroniusMeterService:
     self._dbusservice.add_path('/FirmwareVersion', 0.1)
     self._dbusservice.add_path('/HardwareVersion', 0)
     self._dbusservice.add_path('/Connected', 1)
-    self._dbusservice.add_path('/Role', self._config['ONPREMISE']['Role'])
+    self._dbusservice.add_path('/Role', "grid")
     #self._dbusservice.add_path('/Position', 1) # normaly only needed for pvinverter
     #self._dbusservice.add_path('/Serial', self._getFronisSerial())
     self._dbusservice.add_path('/Serial', "12345")
@@ -173,7 +173,7 @@ class DbusFroniusMeterService:
        finalInjectionValue = 0
        batteryChargeHybrid = 0
 
-       if (pvOverheadShare == 0):
+       if (pvOverheadShare != 0):
          try:
            if (self._dbusservice['/Initialized'] == 1):
              batteryChargeHybrid = VeDbusItemImport(dbusConn, self._config['ONPREMISE']['BatteryServiceName'], '/Dc/0/Power').get_value()
@@ -195,7 +195,7 @@ class DbusFroniusMeterService:
          logging.info("No pvOverheadShare configured. Injecting: " + str(targetPointAC))
          finalInjectionValue = targetPointAC
 
-       elif (batteryChargeHybrid < 100):
+       elif ((availablePVOnGrid + batteryChargeHybrid) < 100):
          logging.info("No PV Overhead or other Battery Charge available. Injecting: " + str(targetPointAC))
          finalInjectionValue = targetPointAC
 
@@ -286,18 +286,9 @@ def main():
       _v = lambda p, v: (str(round(v, 1)) + ' V')  
       _p = lambda p, v: (str(v))  
 
-      servicename = ""
-      if servicename == "":
-          config = configparser.ConfigParser()
-          config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
-          if config['ONPREMISE']['Role'] == 'pvinverter':
-            servicename = 'com.victronenergy.pvinverter'
-          elif config['ONPREMISE']['Role'] == 'grid':
-            servicename = 'com.victronenergy.grid'
-          elif config['ONPREMISE']['Role'] == 'acload':
-            servicename = 'com.victronenergy.acload'
-          elif config['ONPREMISE']['Role'] == 'genset':
-            servicename = 'com.victronenergy.genset'
+      config = configparser.ConfigParser()
+      config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
+      servicename = 'com.victronenergy.grid'
       
       #start our main-service
       pvac_output = DbusFroniusMeterService(
