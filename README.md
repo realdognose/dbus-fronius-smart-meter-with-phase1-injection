@@ -15,6 +15,7 @@ This script reads a fronius smartmeter from the inverts solar-api and manipulate
 - When there is solar overhead available, the value L1 will be adjust to a virtual feedin, so ESS starts to charge the desired amount. 
 - In either case, the original value of L1 is added to L2 and the artificial value L1' is deducted from L2, so the overall Consumption stays correct. 
 - Currents then are recalculated to match the displayed power based on the original voltage. 
+- It can be configured how much of available solar overheat the ESS should steal from the fronius hybrid ;)
 
 # Installation.
 
@@ -44,9 +45,8 @@ svc -u /service/dbus-fronius-smart-meter-with-phase1-injection
 cat /data/dbus-fronius-smart-meter-with-phase1-injection/current.log
 ```
 ### Change config.ini
-Within the project there is a file `/data/dbus-fronius-smart-meter-with-phase1-injection/config.ini` - just change the values - most important is the host and hostPlug in section "ONPREMISE". More details below:
-
-Afther change the config file execute restart.sh to reload new settings 
+Within the project there is a file `/data/dbus-fronius-smart-meter-with-phase1-injection/config.ini`. For details, read the comments in the config file.
+After changing the config, restart cerbo in order to apply new settings due to the service beeing restarted. 
 
 ---
 
@@ -57,13 +57,10 @@ https://github.com/ayasystems/dbus-fronius-smart-meter
  
 # ⚠️ ⚠️ ⚠️ Important ⚠️ ⚠️ ⚠️ 
 This hack fixes the ESS not beeing able to determine it's required Feed-In when running behind a fronius hybrid inverter with a battery. 
-There is a second Issue with that layout: When the fronius is providing battery power at the end of the night, when the scheduled loading window for ESS kicks in, it will start directly charging of the hybrids battery feed, because ESS sees that there is "enough PV Input available".
-
-I've made a second script that corrects the readings for the hybrid inverter (disable the original victron implementation) by injecting another
-regular PV-Inverter and a generater on the AC-side that mimics the battery-feed-in rather than showing it as PV-Output.
-
-ESS will now wait until the PV inverters now start to produce REAL PV Feed-In. 
+In Order to apply the solar overheat distribution between the hybrids battery and the ESS battery, another script to visualize the hybrids
+battery in ESS is required: 
 
 See here: https://github.com/realdognose/dbus-fronius-hybrid-battery-visualisation
 
-(The script to split up the hibrid inverter into regular PV-Inverter plus generator can be used without this phase manipulation script)
+(The script to split up the hibrid inverter into regular PV-Inverter plus generator can be used without this phase manipulation script, but is 
+a prerequisite of the solar distribution feature, because it is mandatory to know if the fronius battery is already charging.)
