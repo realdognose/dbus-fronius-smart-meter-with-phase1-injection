@@ -62,5 +62,5 @@ battery in ESS is required:
 
 See here: https://github.com/realdognose/dbus-fronius-hybrid-battery-visualisation
 
-(The script to split up the hibrid inverter into regular PV-Inverter plus generator can be used without this phase manipulation script, but is 
+(The script to split up the hybrid inverter into regular PV-Inverter plus battery can be used without this phase manipulation script, but is 
 a prerequisite of the solar distribution feature, because it is mandatory to know if the fronius battery is already charging.)
