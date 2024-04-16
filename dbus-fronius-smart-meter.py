@@ -2,6 +2,11 @@
  
 # import normal packages
 # https://github.com/victronenergy/dbus_modbustcp/blob/master/attributes.csv
+from dbus.mainloop.glib import DBusGMainLoop
+
+# Have a mainloop, so we can send/receive asynchronous calls to and from dbus
+DBusGMainLoop(set_as_default=True)
+
 import platform 
 import logging
 import sys
@@ -17,11 +22,10 @@ import dbus
 import requests # for http GET
 import configparser # for config/ini file
 
-from dbus.mainloop.glib import DBusGMainLoop
 # our own packages from victron
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '/opt/victronenergy/dbus-systemcalc-py/ext/velib_python'))
 from vedbus import VeDbusService, VeDbusItemImport
-DBusGMainLoop(set_as_default=True)
+
 dbusConn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
 
 class DbusFroniusMeterService:
@@ -40,7 +44,8 @@ class DbusFroniusMeterService:
  
     # Create the mandatory objects
     self._dbusservice.add_path('/DeviceInstance', deviceinstance)
-    self._dbusservice.add_path('/ProductId', 41392)
+    self._dbusservice.add_path('/ProductId', 45069) # Carlo Gavazzi ET 340 Energy Meter
+    self._dbusservice.add_path('/DeviceType', 345) # found on https://www.sascha-curth.de/projekte/005_Color_Control_GX.html#experiment - should be an ET340 Engerie Meter
     self._dbusservice.add_path('/ProductName', productname) 
     self._dbusservice.add_path('/CustomName', productname)
     self._dbusservice.add_path('/Latency', None)    
@@ -49,7 +54,8 @@ class DbusFroniusMeterService:
     self._dbusservice.add_path('/Connected', 1)
     self._dbusservice.add_path('/Role', self._config['ONPREMISE']['Role'])
     #self._dbusservice.add_path('/Position', 1) # normaly only needed for pvinverter
-    self._dbusservice.add_path('/Serial', self._getFronisSerial())
+    #self._dbusservice.add_path('/Serial', self._getFronisSerial())
+    self._dbusservice.add_path('/Serial', "12345")
     self._dbusservice.add_path('/UpdateIndex', 0)
  
     # add path values to dbus
@@ -126,36 +132,35 @@ class DbusFroniusMeterService:
   def _signOfLife(self):
     logging.info("--- Start: sign of life ---")
     logging.info("Last _update() call: %s" % (self._lastUpdate))
-    logging.info("Last '/Ac/Power': %s" % (self._dbusservice['/Ac/Power']))
     logging.info("--- End: sign of life ---")
     return True
  
   def _update(self):   
     try:
-       #get data from bus 
-       bus = dbus.SystemBus()
-       
+       #get data from bus        
        targetPointAC = 0
        try:
-         targetPointAC = float(VeDbusItemImport(dbusConn, self._config['ONPREMISE']['L1ServiceName'], '/Ac/ActiveIn/L1/P').get_value())
+         if (self._dbusservice['/Initialized'] == 1):
+           targetPointAC = float(VeDbusItemImport(dbusConn, self._config['ONPREMISE']['L1ServiceName'], '/Ac/ActiveIn/L1/P').get_value())
        except Exception as e:
           logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
        consumerAC = 0
        try:
-        consumerAC = float(VeDbusItemImport(dbusConn, self._config['ONPREMISE']['L1ServiceName'], '/Ac/Out/L1/P').get_value())
+        if (self._dbusservice['/Initialized'] == 1):
+          consumerAC = float(VeDbusItemImport(dbusConn, self._config['ONPREMISE']['L1ServiceName'], '/Ac/Out/L1/P').get_value())
        except Exception as e:
          logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
        availablePVOnGrid = 0   
        try:
-         availablePVOnGrid = float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/PvOnGrid/L1/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/PvOnGrid/L2/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/PvOnGrid/L3/Power').get_value()) 
+         if (self._dbusservice['/Initialized'] == 1):
+           availablePVOnGrid = float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/PvOnGrid/L1/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/PvOnGrid/L2/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/PvOnGrid/L3/Power').get_value()) 
        except Exception as e:
          logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
        #get data from Fronius
        meter_data = self._getFroniusData()
-       meter_consumption = meter_data['Body']['Data']['PowerReal_P_Sum']
 
        #get data from config
        pvOverheadShare = float(self._config['ONPREMISE']['SolarOverheadShare'])
@@ -170,26 +175,31 @@ class DbusFroniusMeterService:
 
        if (pvOverheadShare == 0):
          try:
-           batteryChargeHybrid = VeDbusItemImport(dbusConn, self._config['ONPREMISE']['BatteryServiceName'], '/Dc/0/Power').get_value()
+           if (self._dbusservice['/Initialized'] == 1):
+             batteryChargeHybrid = VeDbusItemImport(dbusConn, self._config['ONPREMISE']['BatteryServiceName'], '/Dc/0/Power').get_value()
          except Exception as e:
            logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
-       if (pvOverheadShare == 0):
+       logging.info("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
+       logging.info("Hybrid Battery charge: " + str(batteryChargeHybrid)) 
+       logging.info("PV overhead available: " + str(availablePVOnGrid)) 
+       logging.info("Total available overhead: " + str(availablePVOnGrid + batteryChargeHybrid)) 
+       logging.info("Vic-Bat-Charge: " + str(vicBatCharge))
+       logging.info("Vic-Bat-Loads: " + str(consumerAC))
+      
+       if (self._dbusservice['/Initialized'] == 0):
+         logging.info("Depending services not yet initialized. Injecting: " + str(targetPointAC))
+         finalInjectionValue = targetPointAC
+
+       elif (pvOverheadShare == 0):
          logging.info("No pvOverheadShare configured. Injecting: " + str(targetPointAC))
          finalInjectionValue = targetPointAC
 
-       elif (availablePVOnGrid < 5 and batteryChargeHybrid > 0):
+       elif (batteryChargeHybrid < 100):
          logging.info("No PV Overhead or other Battery Charge available. Injecting: " + str(targetPointAC))
          finalInjectionValue = targetPointAC
 
        else:
-         logging.info("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
-         logging.info("Hybrid Battery charge: " + str(batteryChargeHybrid)) 
-         logging.info("PV overhead available: " + str(availablePVOnGrid)) 
-         logging.info("Total available overhead: " + str(availablePVOnGrid + batteryChargeHybrid)) 
-         logging.info("Vic-Bat-Charge: " + str(vicBatCharge))
-         logging.info("Vic-Bat-Loads: " + str(consumerAC))
-
          maxPowerToSneak = min(pvOverheadLimit, (availablePVOnGrid + batteryChargeHybrid) * pvOverheadShare)
          logging.info("Max power to sneak: " + str(maxPowerToSneak))
 
@@ -207,7 +217,6 @@ class DbusFroniusMeterService:
        self._dbusservice['/Ac/L1/Voltage'] = float(meter_data['Body']['Data']['Voltage_AC_Phase_1'])
        self._dbusservice['/Ac/L2/Voltage'] = float(meter_data['Body']['Data']['Voltage_AC_Phase_2'])
        self._dbusservice['/Ac/L3/Voltage'] = float(meter_data['Body']['Data']['Voltage_AC_Phase_3'])
-       self._dbusservice['/Ac/Voltage'] = (self._dbusservice['/Ac/L1/Voltage'] + self._dbusservice['/Ac/L2/Voltage'] + self._dbusservice['/Ac/L3/Voltage'])/3.0
 
        #set Power
        self._dbusservice['/Ac/L1/Power'] = finalInjectionValue # Value we want ESS to see on Phase 1
@@ -216,14 +225,17 @@ class DbusFroniusMeterService:
        self._dbusservice['/Ac/Power'] = self._dbusservice['/Ac/L1/Power'] + self._dbusservice['/Ac/L2/Power'] + self._dbusservice['/Ac/L3/Power']
 
        #Calculate Fake Current as well.
-       self._dbusservice['/Ac/L1/Current'] = self._dbusservice['/Ac/L1/Power'] / self._dbusservice['/Ac/L1/Voltage']
-       self._dbusservice['/Ac/L2/Current'] = self._dbusservice['/Ac/L2/Power'] / self._dbusservice['/Ac/L2/Voltage']
-       self._dbusservice['/Ac/L3/Current'] = self._dbusservice['/Ac/L3/Power'] / self._dbusservice['/Ac/L3/Voltage']
-       self._dbusservice['/Ac/Current'] = self._dbusservice['/Ac/L1/Current'] + self._dbusservice['/Ac/L2/Current'] + self._dbusservice['/Ac/L3/Current']
+       self._dbusservice['/Ac/L1/Current'] = round(self._dbusservice['/Ac/L1/Power'] / self._dbusservice['/Ac/L1/Voltage'],2)
+       self._dbusservice['/Ac/L2/Current'] = round(self._dbusservice['/Ac/L2/Power'] / self._dbusservice['/Ac/L2/Voltage'],2)
+       self._dbusservice['/Ac/L3/Current'] = round(self._dbusservice['/Ac/L3/Power'] / self._dbusservice['/Ac/L3/Voltage'],2)
 
        #stats
-       self._dbusservice['/Ac/L1/Energy/Forward'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Consumed'])/1000 
-       self._dbusservice['/Ac/L1/Energy/Reverse'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Produced'])/1000  
+       self._dbusservice['/Ac/L1/Energy/Forward'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Consumed'])/3000 
+       self._dbusservice['/Ac/L1/Energy/Reverse'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Produced'])/3000  
+       self._dbusservice['/Ac/L2/Energy/Forward'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Consumed'])/3000 
+       self._dbusservice['/Ac/L2/Energy/Reverse'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Produced'])/3000  
+       self._dbusservice['/Ac/L3/Energy/Forward'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Consumed'])/3000 
+       self._dbusservice['/Ac/L3/Energy/Reverse'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Produced'])/3000  
        self._dbusservice['/Ac/Energy/Forward'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Consumed'])/1000
        self._dbusservice['/Ac/Energy/Reverse'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Produced'])/1000
               
@@ -231,6 +243,11 @@ class DbusFroniusMeterService:
        index = self._dbusservice['/UpdateIndex'] + 1  # increment index
        if index > 255:   # maximum value of the index
          index = 0       # overflow from 255 to 0
+       
+       #After approx 1 min, set the initialized flag. 
+       if (index == 30):
+         self._dbusservice['/Initialized'] = 1 
+       
        self._dbusservice['/UpdateIndex'] = index
 
        #update lastupdate vars
@@ -246,7 +263,6 @@ class DbusFroniusMeterService:
     return True # accept the change
  
 
-
 def main():
   #configure logging
   logging.basicConfig(      format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -259,14 +275,17 @@ def main():
  
   try:
       from dbus.mainloop.glib import DBusGMainLoop
+
       # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
       DBusGMainLoop(set_as_default=True)
-     
+
       #formatting 
       _kwh = lambda p, v: (str(round(v, 2)) + ' kWh')
       _a = lambda p, v: (str(round(v, 1)) + ' A')
       _w = lambda p, v: (str(round(v, 1)) + ' W')
-      _v = lambda p, v: (str(round(v, 1)) + ' V')   
+      _v = lambda p, v: (str(round(v, 1)) + ' V')  
+      _p = lambda p, v: (str(v))  
+
       servicename = ""
       if servicename == "":
           config = configparser.ConfigParser()
@@ -279,32 +298,31 @@ def main():
             servicename = 'com.victronenergy.acload'
           elif config['ONPREMISE']['Role'] == 'genset':
             servicename = 'com.victronenergy.genset'
-      logging.error(servicename);
+      
       #start our main-service
       pvac_output = DbusFroniusMeterService(
         servicename=servicename,
-        deviceinstance=40,
+        deviceinstance=int(config['ONPREMISE']['CreatedMeterID']),
         paths={
           '/Ac/Energy/Forward': {'initial': 0, 'textformat': _kwh}, # energy bought from the grid
           '/Ac/Energy/Reverse': {'initial': 0, 'textformat': _kwh}, # energy sold to the grid
           '/Ac/Power': {'initial': 0, 'textformat': _w},
-          '/Ac/Current': {'initial': 0, 'textformat': _a},
-          '/Ac/Voltage': {'initial': 0, 'textformat': _v},
           '/Ac/L1/Voltage': {'initial': 0, 'textformat': _v},
-          '/Ac/L2/Voltage': {'initial': None, 'textformat': _v},
-          '/Ac/L3/Voltage': {'initial': None, 'textformat': _v},
+          '/Ac/L2/Voltage': {'initial': 0, 'textformat': _v},
+          '/Ac/L3/Voltage': {'initial': 0, 'textformat': _v},
           '/Ac/L1/Current': {'initial': 0, 'textformat': _a},
-          '/Ac/L2/Current': {'initial': None, 'textformat': _a},
-          '/Ac/L3/Current': {'initial': None, 'textformat': _a},
+          '/Ac/L2/Current': {'initial': 0, 'textformat': _a},
+          '/Ac/L3/Current': {'initial': 0, 'textformat': _a},
           '/Ac/L1/Power': {'initial': 0, 'textformat': _w},
-          '/Ac/L2/Power': {'initial': None, 'textformat': _w},
-          '/Ac/L3/Power': {'initial': None, 'textformat': _w},
+          '/Ac/L2/Power': {'initial': 0, 'textformat': _w},
+          '/Ac/L3/Power': {'initial': 0, 'textformat': _w},
           '/Ac/L1/Energy/Forward': {'initial': 0, 'textformat': _kwh},
-          '/Ac/L2/Energy/Forward': {'initial': None, 'textformat': _kwh},
-          '/Ac/L3/Energy/Forward': {'initial': None, 'textformat': _kwh},
+          '/Ac/L2/Energy/Forward': {'initial': 0, 'textformat': _kwh},
+          '/Ac/L3/Energy/Forward': {'initial': 0, 'textformat': _kwh},
           '/Ac/L1/Energy/Reverse': {'initial': 0, 'textformat': _kwh},
-          '/Ac/L2/Energy/Reverse': {'initial': None, 'textformat': _kwh},
-          '/Ac/L3/Energy/Reverse': {'initial': None, 'textformat': _kwh},
+          '/Ac/L2/Energy/Reverse': {'initial': 0, 'textformat': _kwh},
+          '/Ac/L3/Energy/Reverse': {'initial': 0, 'textformat': _kwh},
+          '/Initialized': {'initial': 0, 'textformat': _p},
         })
      
       logging.info('Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
