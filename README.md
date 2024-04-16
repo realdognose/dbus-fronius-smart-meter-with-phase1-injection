@@ -5,9 +5,14 @@
 ⚠️ Only usable with a Single-Phase System, where the actual values of L2 and L3 doesn't matter *for ESS* ⚠️
 
 This is a fork of the original dbus-fronius-smart-meter repository. I'm running ESS on a victron with a *dedicated* battery behind
-a fronius hybrid inverter with it's own battery. The subgrid Multigrid inverter should take over supply of it's attached loads during
-nighttime to increase the runtime of the hybrid's battery. With usual smart-meter readings this leads to both inverters / batteries
+a fronius hybrid inverter with it's own battery. The *subgrid*s inverter (victron multigrid) should take over supply of it's attached loads during
+nighttime to increase the runtime of the hybrids battery. With usual smart-meter readings this leads to both inverters / batteries
 trying to go up and down on their feed-in values, both trying to zero out consumption at the feed in point. 
+
+| ![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/Schema.png) | 
+|:--:| 
+| *Schematic Layout to illustrate what subgrid means.* |
+
 
 This script reads a fronius smartmeter from the inverts solar-api and manipulates the readings in the following way: 
 
@@ -23,7 +28,9 @@ so a tiny bit of energy will always flow from the main-grid to the sub grid. ESS
 
 This mode is entered, when the battery discharge of the hybrid inverters battery is greater than 100 watts.
 
-![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/ControlledDischarge.png)
+| ![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/ControlledDischarge.png) | 
+|:--:| 
+| *Controlled discharge from dusk till dawn* |
 
 # Example Two, Charge ESS first
 
