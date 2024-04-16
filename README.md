@@ -17,6 +17,22 @@ This script reads a fronius smartmeter from the inverts solar-api and manipulate
 - Currents then are recalculated to match the displayed power based on the original voltage. 
 - It can be configured how much of available solar overheat the ESS should steal from the fronius hybrid ;)
 
+# Example One, Controlled discharge: 
+From dusk till dawn, the value presented as L1 will equal the victron inverters AC-IN Value. In this example ESS is working with a grid set point of 35 Watts, 
+so a tiny bit of energy will always flow from the main-grid to the sub grid. ESS will feed in enough from it's own battery to satisfy it's own critical loads needs: 
+
+This mode is entered, when the battery discharge of the hybrid inverters battery is greater than 100 watts.
+
+![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/ControlledDischarge.png)
+
+# Example Two, Charge ESS first
+
+TODO
+
+# Example Three, Balance PV Overheat evenly
+
+TODO
+
 # Installation.
 
 ```
