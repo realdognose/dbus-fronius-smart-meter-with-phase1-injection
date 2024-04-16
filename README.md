@@ -27,7 +27,7 @@ From dusk till dawn, the value presented as L1 will equal the victron inverters 
 with a grid set point of 35 Watts, so a tiny bit of energy will always flow from the main-grid to the sub grid. ESS will feed in enough from it's own 
 battery to satisfy it's own critical loads needs: 
 
-This mode is entered, when there is < 100 Watts PV-Feedin available, i.e. the hybrid batterie is already discharging and supplying all loads. 
+This mode is entered, when there is < 100 Watts PV-Feedin available, i.e. the hybrids battery is already discharging and supplying all loads. 
 
 | ![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/ControlledDischarge.png) | 
 |:--:| 
@@ -36,9 +36,9 @@ This mode is entered, when there is < 100 Watts PV-Feedin available, i.e. the hy
 # Example Two, Charge ESS first
 In the config file, two values can be set: `SolarOverheadShare` and `SolarOverheadLimit`. In this Example, we want the ESS battery to charge
 first, because it is only capable of charging with ~ 450 Watts, so it should get precedence above the hybrid inverter who can charge with around
-7000 Watts. Therefore, we configure `SolarOverheadShare=1`  and `SolarOverheadLimit=600`. 
+7000 Watts. Therefore, we configure `SolarOverheadShare=1` (100%)  and `SolarOverheadLimit=600` (Watts). 
 
-100% of the available PV-Overheat woll now be requested by ESS, first. This is achieved by setting L1 to a manipulated `-600` so ESS will start to 
+100% of the available PV-Overhead will now be requested by ESS, first. This is achieved by setting L1 to a manipulated `-600` so ESS will start to 
 act and balance on it's AC-IN until L1 will reach about `-150` and the battery charge rate 450 Watts. The script will take care to take the actual 
 loads as well as actual available PV-Overhead into account and recalculate a proper L1 value every cycle.
 
