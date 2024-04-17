@@ -48,7 +48,24 @@ loads as well as actual available PV-Overhead into account and recalculate a pro
 
 # Example Three, Balance PV Overheat evenly
 
-TODO
+TODO: Description
+
+```
+2024-04-17 08:17:40,234 root INFO Target Point AC: 384.0
+2024-04-17 08:17:40,391 root INFO pvOverheadShare configured to 0.1 with a limit of 600.0
+2024-04-17 08:17:40,392 root INFO Hybrid Battery charge: 1046.0
+2024-04-17 08:17:40,394 root INFO PV overhead available: 976.9999999999997
+2024-04-17 08:17:40,395 root INFO AC Loads: 925.9862855782374
+2024-04-17 08:17:40,397 root INFO Total available overhead: 1097.0137144217622
+2024-04-17 08:17:40,417 root INFO Vic-Bat-Charge: 134.0
+2024-04-17 08:17:40,419 root INFO Vic-Bat-Loads: 250.0
+2024-04-17 08:17:40,420 root INFO Max power to sneak: 109.70137144217622
+2024-04-17 08:17:40,422 root INFO Additional Charge required: -24.298628557823776
+2024-04-17 08:17:40,423 root INFO Final InjectionValue: 24.298628557823776
+```
+| ![Image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/SharedLoad.png) | 
+|:--:| 
+| *PV Overhead share of `0.1` (10%): L1 will be calculated in a way that ESS is charging with about 109 Watts after balancing for 20 Watts on the artifical L1 value. |
 
 # Installation.
 
