@@ -1,3 +1,3 @@
 #!/bin/bash
  
-kill $(pgrep -f 'python /data/dbus-fronius-smart-meter/dbus-fronius-smart-meter.py')
+kill $(pgrep -f 'python /data/dbus-fronius-smart-meter-with-phase1-injection/dbus-fronius-smart-meter.py')

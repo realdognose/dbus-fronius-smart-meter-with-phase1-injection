@@ -159,6 +159,13 @@ class DbusFroniusMeterService:
        except Exception as e:
          logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
+       allLoadsAC=0
+       try:
+         if (self._dbusservice['/Initialized'] == 1):
+           allLoadsAC = float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L1/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L2/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L3/Power').get_value()) 
+       except Exception as e:
+         logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
+
        #get data from Fronius
        meter_data = self._getFroniusData()
 
@@ -183,7 +190,8 @@ class DbusFroniusMeterService:
        logging.info("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
        logging.info("Hybrid Battery charge: " + str(batteryChargeHybrid)) 
        logging.info("PV overhead available: " + str(availablePVOnGrid)) 
-       logging.info("Total available overhead: " + str(availablePVOnGrid + batteryChargeHybrid)) 
+       logging.info("AC Loads: " + str(allLoadsAC)) 
+       logging.info("Total available overhead: " + str(availablePVOnGrid + batteryChargeHybrid -allLoadsAC)) 
        logging.info("Vic-Bat-Charge: " + str(vicBatCharge))
        logging.info("Vic-Bat-Loads: " + str(consumerAC))
       
@@ -195,22 +203,26 @@ class DbusFroniusMeterService:
          logging.info("No pvOverheadShare configured. Injecting: " + str(targetPointAC))
          finalInjectionValue = targetPointAC
 
-       elif ((availablePVOnGrid + batteryChargeHybrid) < 100):
+       elif ((availablePVOnGrid + batteryChargeHybrid) < 100 or (availablePVOnGrid + batteryChargeHybrid) < allLoadsAC):
+         #TODO: Requires a mechanism to avoid the available Overhead is raising above 100 as soon as feed in starts. Maybe a 10,15 minute lock?
          logging.info("No PV Overhead or other Battery Charge available. Injecting: " + str(targetPointAC))
          finalInjectionValue = targetPointAC
 
        else:
-         maxPowerToSneak = min(pvOverheadLimit, (availablePVOnGrid + batteryChargeHybrid) * pvOverheadShare)
+         #TODO: Need to handle battery full and PV Available.
+         maxPowerToSneak = min(pvOverheadLimit, (availablePVOnGrid + batteryChargeHybrid - allLoadsAC) * pvOverheadShare)
+
+         if (maxPowerToSneak<0):
+           maxPowerToSneak=0
+
          logging.info("Max power to sneak: " + str(maxPowerToSneak))
 
          diffChargeRequired = maxPowerToSneak - vicBatCharge
          logging.info("Additional Charge required: " + str(diffChargeRequired))
 
-         #Calculate a injection value based on the available (fronius) battery charge and the actual consumption / Charge. 
-         #this is simply that we present the available charge - what is already beeing charged as "feed in" on L1.
          finalInjectionValue = diffChargeRequired * -1
+         
       
-
        logging.info("Final InjectionValue: " + str(finalInjectionValue))
 
        #set Voltages
@@ -245,6 +257,7 @@ class DbusFroniusMeterService:
          index = 0       # overflow from 255 to 0
        
        #After approx 1 min, set the initialized flag. 
+       #It should now be save to query other dbus-services.
        if (index == 30):
          self._dbusservice['/Initialized'] = 1 
        
