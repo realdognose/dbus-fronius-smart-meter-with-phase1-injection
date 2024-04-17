@@ -42,9 +42,9 @@ first, because it is only capable of charging with ~ 450 Watts, so it should get
 act and balance on it's AC-IN until L1 will reach about `-150` and the battery charge rate 450 Watts. The script will take care to take the actual 
 loads as well as actual available PV-Overhead into account and recalculate a proper L1 value every cycle.
 
-| TODO:Image | 
+| ![Image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/ControlledCharge.png) | 
 |:--:| 
-| *Controlled charge, by manipulating L1 to simulate available PV-Overhead* |
+| *Controlled charge, by manipulating L1 to simulate available PV-Overhead*: L1 is set in a way that ESS is starting to charge and the hybrid inverter will favour it's loads, charging less on it's own battery |
 
 # Example Three, Balance PV Overheat evenly
 
