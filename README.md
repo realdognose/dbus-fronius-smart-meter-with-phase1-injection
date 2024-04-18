@@ -23,7 +23,7 @@ This script reads a fronius smartmeter from the inverts solar-api and manipulate
 - It can be configured how much of available solar overheat the ESS should steal from the fronius hybrid ;)
 
 # Example One, Controlled discharge: 
-From dusk till dawn, the value presented as L1 will equal the victron inverters *AC-IN Value minus ESS Battery Feed-In*. In this example ESS is working 
+From dusk till dawn, the value presented as L1 will equal the victron inverters *AC-IN Value*. In this example ESS is working 
 with a grid set point of 35 Watts, so a tiny bit of energy will always flow from the main-grid to the sub grid. ESS will feed in enough from it's own 
 battery to satisfy it's own critical loads needs: 
 
