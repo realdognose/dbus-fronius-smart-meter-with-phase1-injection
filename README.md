@@ -27,8 +27,6 @@ From dusk till dawn, the value presented as L1 will equal the victron inverters 
 with a grid set point of 35 Watts, so a tiny bit of energy will always flow from the main-grid to the sub grid. ESS will feed in enough from it's own 
 battery to satisfy it's own critical loads needs: 
 
-This mode is entered, when there is < 100 Watts PV-Feedin available, i.e. the hybrids battery is already discharging and supplying all loads. 
-
 | ![image](https://github.com/realdognose/dbus-fronius-smart-meter-with-phase1-injection/blob/main/img/ControlledDischarge.png) | 
 |:--:| 
 | *Controlled discharge from dusk till dawn* |
@@ -92,12 +90,13 @@ svc -u /service/dbus-fronius-smart-meter-with-phase1-injection
 ```
 ### View log file
 ```
-cat /data/dbus-fronius-smart-meter-with-phase1-injection/current.log
+cat /data/log/dbus-fronius-smart-meter-with-phase1-injection/current.log
 ```
 ### Change config.ini
 Within the project there is a file `/data/dbus-fronius-smart-meter-with-phase1-injection/config.ini`. For details, read the comments in the config file.
 After changing the config, restart cerbo in order to apply new settings due to the service beeing restarted. 
 
+Note: After changing the file, a service restart is required.
 ---
 
 # original description
