@@ -76,18 +76,6 @@ chmod a+x /data/dbus-fronius-smart-meter-with-phase1-injection/install.sh
 rm main.zip
 ```
 ⚠️ Check configuration after that - because service is already installed an running and with wrong data you will spam the log-file
-### Stop service
-```
-svc -d /service/dbus-fronius-smart-meter-with-phase1-injection
-```
-### Start service
-```
-svc -u /service/dbus-fronius-smart-meter-with-phase1-injection
-```
-### Reload data
-```
-/data/dbus-fronius-smart-meter-with-phase1-injection/restart.sh
-```
 ### View log file
 ```
 cat /data/log/dbus-fronius-smart-meter-with-phase1-injection/current.log
@@ -96,7 +84,7 @@ cat /data/log/dbus-fronius-smart-meter-with-phase1-injection/current.log
 Within the project there is a file `/data/dbus-fronius-smart-meter-with-phase1-injection/config.ini`. For details, read the comments in the config file.
 After changing the config, restart cerbo in order to apply new settings due to the service beeing restarted. 
 
-Note: After changing the file, a service restart is required.
+Note: After changing the config file, a device restart is required.
 ---
 
 # original description
