@@ -29,7 +29,7 @@ from vedbus import VeDbusService, VeDbusItemImport
 dbusConn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
 
 class DbusFroniusMeterService:
-  def __init__(self, servicename, deviceinstance, paths, productname='Fronius Smart Meter VIR', connection='Fronius meter JSON API'):
+  def __init__(self, servicename, deviceinstance, paths, productname='Fronius Smart Meter VIR w. Phase1 Hack', connection='Fronius meter JSON API'):
     self._config = configparser.ConfigParser()
     self._config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     self._dbusservice = VeDbusService("{}.http_{:02d}".format(servicename, deviceinstance))
@@ -137,6 +137,9 @@ class DbusFroniusMeterService:
  
   def _update(self):   
     try:
+       #current Update Cycle Index
+       currentCycleIndex = self._dbusservice['/UpdateIndex']
+
        #get data from bus        
        targetPointAC = 0
        try:
@@ -173,8 +176,12 @@ class DbusFroniusMeterService:
        pvOverheadShare = float(self._config['ONPREMISE']['SolarOverheadShare'])
        pvOverheadLimit = float(self._config['ONPREMISE']['SolarOverheadLimit'])
 
-       logging.info("------------------------------")
-       logging.info("Target Point AC: " + str(targetPointAC))
+       if (currentCycleIndex == 100):
+         logging.info("------------------------------")
+         logging.info("Target Point AC: " + str(targetPointAC))
+       else:  
+         logging.debug("------------------------------")
+         logging.debug("Target Point AC: " + str(targetPointAC))
        
        vicBatCharge = targetPointAC - consumerAC
        finalInjectionValue = 0
@@ -187,43 +194,72 @@ class DbusFroniusMeterService:
          except Exception as e:
            logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
-       logging.info("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
-       logging.info("Hybrid Battery charge: " + str(batteryChargeHybrid)) 
-       logging.info("PV overhead available: " + str(availablePVOnGrid)) 
-       logging.info("AC Loads: " + str(allLoadsAC)) 
-       logging.info("Total available overhead: " + str(availablePVOnGrid + batteryChargeHybrid -allLoadsAC)) 
-       logging.info("Vic-Bat-Charge: " + str(vicBatCharge))
-       logging.info("Vic-Bat-Loads: " + str(consumerAC))
-      
+       if (currentCycleIndex == 100):
+         logging.info("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
+         logging.info("Hybrid Battery charge: " + str(batteryChargeHybrid)) 
+         logging.info("PV available: " + str(availablePVOnGrid)) 
+         logging.info("AC Loads: " + str(allLoadsAC)) #allLoadsAC contains consumerAC as well.
+         logging.info("ESS-Bat-Charge: " + str(vicBatCharge))
+         logging.info("ESS-Bat-Loads: " + str(consumerAC))
+       else:
+         logging.debug("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
+         logging.debug("Hybrid Battery charge: " + str(batteryChargeHybrid)) 
+         logging.debug("PV available: " + str(availablePVOnGrid)) 
+         logging.debug("AC Loads: " + str(allLoadsAC)) #allLoadsAC contains consumerAC as well.
+         logging.debug("ESS-Bat-Charge: " + str(vicBatCharge))
+         logging.debug("ESS-Bat-Loads: " + str(consumerAC))
+
+       # Total Available overhead for VIC Charge is: 
+       # pvOnGrid
+       # minus Loads
+       # plus Amount Hybrid Batterie is charging
+       # plus Amount vic Batterie is charging
+       totalOverhead = availablePVOnGrid - allLoadsAC + batteryChargeHybrid + vicBatCharge
+       logging.debug("Total available overhead: " + str(totalOverhead)) 
+       
        if (self._dbusservice['/Initialized'] == 0):
-         logging.info("Depending services not yet initialized. Injecting: " + str(targetPointAC))
+         logging.warn("Depending services not yet initialized. Injecting: " + str(targetPointAC))
          finalInjectionValue = targetPointAC
 
        elif (pvOverheadShare == 0):
-         logging.info("No pvOverheadShare configured. Injecting: " + str(targetPointAC))
+         if (currentCycleIndex == 100):
+           logging.info("! No pvOverheadShare configured. Injecting: " + str(targetPointAC))
+         else:
+           logging.debug("! No pvOverheadShare configured. Injecting: " + str(targetPointAC))
+         
          finalInjectionValue = targetPointAC
 
        elif ((availablePVOnGrid + batteryChargeHybrid) < 100 or (availablePVOnGrid + batteryChargeHybrid) < allLoadsAC):
          #TODO: Requires a mechanism to avoid the available Overhead is raising above 100 as soon as feed in starts. Maybe a 10,15 minute lock?
-         logging.info("No PV Overhead or other Battery Charge available. Injecting: " + str(targetPointAC))
+         if (currentCycleIndex == 100):
+           logging.info("! No pvOverheadShare configured. Injecting: " + str(targetPointAC))
+         else:
+           logging.debug("! No pvOverheadShare configured. Injecting: " + str(targetPointAC))
+
          finalInjectionValue = targetPointAC
 
        else:
          #TODO: Need to handle battery full and PV Available.
-         maxPowerToSneak = min(pvOverheadLimit, (availablePVOnGrid + batteryChargeHybrid - allLoadsAC) * pvOverheadShare)
+         maxPowerToSneak = min(pvOverheadLimit, totalOverhead * pvOverheadShare)
 
          if (maxPowerToSneak<0):
            maxPowerToSneak=0
 
-         logging.info("Max power to sneak: " + str(maxPowerToSneak))
-
          diffChargeRequired = maxPowerToSneak - vicBatCharge
-         logging.info("Additional Charge required: " + str(diffChargeRequired))
+
+         if (currentCycleIndex == 100):
+           logging.info("Max power for subgrid charge: " + str(maxPowerToSneak))
+           logging.info("Additional Charge required: " + str(diffChargeRequired))
+         else:
+           logging.debug("Max power for subgrid charge: " + str(maxPowerToSneak))
+           logging.debug("Additional Charge required: " + str(diffChargeRequired))
 
          finalInjectionValue = diffChargeRequired * -1
          
-      
-       logging.info("Final InjectionValue: " + str(finalInjectionValue))
+       if (currentCycleIndex == 100):
+         logging.info("==> Final InjectionValue: " + str(finalInjectionValue))
+       else:
+         logging.debug("==> Final InjectionValue: " + str(finalInjectionValue))
 
        #set Voltages
        self._dbusservice['/Ac/L1/Voltage'] = float(meter_data['Body']['Data']['Voltage_AC_Phase_1'])
@@ -252,13 +288,15 @@ class DbusFroniusMeterService:
        self._dbusservice['/Ac/Energy/Reverse'] = float(meter_data['Body']['Data']['EnergyReal_WAC_Sum_Produced'])/1000
               
        # increment UpdateIndex - to show that new data is available
-       index = self._dbusservice['/UpdateIndex'] + 1  # increment index
+       index = currentCycleIndex + 1  # increment index
        if index > 255:   # maximum value of the index
          index = 0       # overflow from 255 to 0
        
        #After approx 1 min, set the initialized flag. 
        #It should now be save to query other dbus-services.
-       if (index == 30):
+       dbusQueryCycleStart = int(self._config['ONPREMISE']['DbusQueryCycleStart'])
+       if (index == dbusQueryCycleStart):
+         logging.info(str(dbusQueryCycleStart) + " cycles passed. Attempting to resolve dbus values from now on. If you see exceptions after that, increase DbusQueryCycleStart in config.ini.")
          self._dbusservice['/Initialized'] = 1 
        
        self._dbusservice['/UpdateIndex'] = index
@@ -277,12 +315,22 @@ class DbusFroniusMeterService:
  
 
 def main():
+  config = configparser.ConfigParser()
+  config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
+
+  logLevelString = config['ONPREMISE']['LogLevel']
+  logLevel = logging.getLevelName(logLevelString)
+  logDir = "/data/log/dbus-fronius-smart-meter-with-phase1-injection"
+  
+  if not os.path.exists(logDir):
+    os.mkdir(logDir)
+
   #configure logging
   logging.basicConfig(      format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S',
-                            level=logging.INFO,
+                            level=logLevel,
                             handlers=[
-                                logging.FileHandler("%s/current.log" % (os.path.dirname(os.path.realpath(__file__)))),
+                                logging.FileHandler(logDir + "/current.log"),
                                 logging.StreamHandler()
                             ])
  
@@ -299,8 +347,7 @@ def main():
       _v = lambda p, v: (str(round(v, 1)) + ' V')  
       _p = lambda p, v: (str(v))  
 
-      config = configparser.ConfigParser()
-      config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
+      
       servicename = 'com.victronenergy.grid'
       
       #start our main-service
