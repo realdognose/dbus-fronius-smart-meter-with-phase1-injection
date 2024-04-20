@@ -179,7 +179,7 @@ class DbusFroniusMeterService:
        vicBatCharge = acInESS - acOutESS
        finalInjectionValue = 0
        batteryChargeHybrid = 0
-       acLoadsCleared = acLoads - acInESS
+       acLoadsCleared = acLoads - acOutESS
 
        try:
          if (self._dbusservice['/Initialized'] == 1):
@@ -193,7 +193,7 @@ class DbusFroniusMeterService:
          logging.info("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
          logging.info("AC-IN Victron: " + str(acInESS))
          logging.info("AC-OUT Victron: " + str(acOutESS))
-         logging.info("AC Loads: " + str(acLoads)) #AC Loads already contains acInESS as well
+         logging.info("AC Loads: " + str(acLoads)) #AC Loads already contains Critical Loads as well
          logging.info("AC Loads (cleared): " + str(acLoadsCleared)) 
          logging.info("PV in: " + str(availablePVOnGrid)) #PV In will contain hybrid discharge. 
          logging.info("Bat charge Hybrid: " + str(batteryChargeHybrid))
@@ -203,7 +203,7 @@ class DbusFroniusMeterService:
          logging.debug("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
          logging.debug("AC-IN Victron: " + str(acInESS))
          logging.debug("AC-OUT Victron: " + str(acOutESS))
-         logging.debug("AC Loads: " + str(acLoads)) #AC Loads already contains acInESS as well
+         logging.debug("AC Loads: " + str(acLoads)) #AC Loads already contains Critical Loads as well
          logging.debug("AC Loads (cleared): " + str(acLoadsCleared))
          logging.debug("PV in: " + str(availablePVOnGrid)) #PV In will contain hybrid discharge. 
          logging.debug("Bat charge Hybrid: " + str(batteryChargeHybrid)) 
