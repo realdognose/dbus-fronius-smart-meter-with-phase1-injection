@@ -141,17 +141,17 @@ class DbusFroniusMeterService:
        currentCycleIndex = self._dbusservice['/UpdateIndex']
 
        #get data from bus        
-       targetPointAC = 0
+       acInESS = 0
        try:
          if (self._dbusservice['/Initialized'] == 1):
-           targetPointAC = float(VeDbusItemImport(dbusConn, self._config['ONPREMISE']['L1ServiceName'], '/Ac/ActiveIn/L1/P').get_value())
+           acInESS = float(VeDbusItemImport(dbusConn, self._config['ONPREMISE']['L1ServiceName'], '/Ac/ActiveIn/L1/P').get_value())
        except Exception as e:
           logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
-       consumerAC = 0
+       acOutESS = 0
        try:
         if (self._dbusservice['/Initialized'] == 1):
-          consumerAC = float(VeDbusItemImport(dbusConn, self._config['ONPREMISE']['L1ServiceName'], '/Ac/Out/L1/P').get_value())
+          acOutESS = float(VeDbusItemImport(dbusConn, self._config['ONPREMISE']['L1ServiceName'], '/Ac/Out/L1/P').get_value())
        except Exception as e:
          logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
@@ -162,10 +162,10 @@ class DbusFroniusMeterService:
        except Exception as e:
          logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
-       allLoadsAC=0
+       acLoads=0
        try:
          if (self._dbusservice['/Initialized'] == 1):
-           allLoadsAC = float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L1/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L2/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L3/Power').get_value()) 
+           acLoads = float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L1/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L2/Power').get_value()) + float(VeDbusItemImport(dbusConn, "com.victronenergy.system", '/Ac/Consumption/L3/Power').get_value()) 
        except Exception as e:
          logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
@@ -175,91 +175,52 @@ class DbusFroniusMeterService:
        #get data from config
        pvOverheadShare = float(self._config['ONPREMISE']['SolarOverheadShare'])
        pvOverheadLimit = float(self._config['ONPREMISE']['SolarOverheadLimit'])
-
-       if (currentCycleIndex == 100):
-         logging.info("------------------------------")
-         logging.info("Target Point AC: " + str(targetPointAC))
-       else:  
-         logging.debug("------------------------------")
-         logging.debug("Target Point AC: " + str(targetPointAC))
        
-       vicBatCharge = targetPointAC - consumerAC
+       vicBatCharge = acInESS - acOutESS
        finalInjectionValue = 0
        batteryChargeHybrid = 0
+       acLoadsCleared = acLoads - acInESS
 
-       if (pvOverheadShare != 0):
-         try:
-           if (self._dbusservice['/Initialized'] == 1):
-             batteryChargeHybrid = VeDbusItemImport(dbusConn, self._config['ONPREMISE']['BatteryServiceName'], '/Dc/0/Power').get_value()
-         except Exception as e:
-           logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
+       try:
+         if (self._dbusservice['/Initialized'] == 1):
+          batteryChargeHybrid = VeDbusItemImport(dbusConn, self._config['ONPREMISE']['BatteryServiceName'], '/Dc/0/Power').get_value()
+       except Exception as e:
+        logging.warn("Failed to retrieve value. DBUS Object not yet ready?")
 
+       #dump all values we gathered  
        if (currentCycleIndex == 100):
+         logging.info("------------------------------")
          logging.info("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
-         logging.info("Hybrid Battery charge: " + str(batteryChargeHybrid)) 
-         logging.info("PV available: " + str(availablePVOnGrid)) 
-         logging.info("AC Loads: " + str(allLoadsAC)) #allLoadsAC contains consumerAC as well.
-         logging.info("ESS-Bat-Charge: " + str(vicBatCharge))
-         logging.info("ESS-Bat-Loads: " + str(consumerAC))
-       else:
+         logging.info("AC-IN Victron: " + str(acInESS))
+         logging.info("AC-OUT Victron: " + str(acOutESS))
+         logging.info("AC Loads: " + str(acLoads)) #AC Loads already contains acInESS as well
+         logging.info("AC Loads (cleared): " + str(acLoadsCleared)) 
+         logging.info("PV in: " + str(availablePVOnGrid)) #PV In will contain hybrid discharge. 
+         logging.info("Bat charge Hybrid: " + str(batteryChargeHybrid))
+         logging.info("Bat charge Victron: " + str(vicBatCharge))
+       else:  
+         logging.debug("------------------------------")
          logging.debug("pvOverheadShare configured to " + str(pvOverheadShare) + " with a limit of " + str(pvOverheadLimit))
-         logging.debug("Hybrid Battery charge: " + str(batteryChargeHybrid)) 
-         logging.debug("PV available: " + str(availablePVOnGrid)) 
-         logging.debug("AC Loads: " + str(allLoadsAC)) #allLoadsAC contains consumerAC as well.
-         logging.debug("ESS-Bat-Charge: " + str(vicBatCharge))
-         logging.debug("ESS-Bat-Loads: " + str(consumerAC))
+         logging.debug("AC-IN Victron: " + str(acInESS))
+         logging.debug("AC-OUT Victron: " + str(acOutESS))
+         logging.debug("AC Loads: " + str(acLoads)) #AC Loads already contains acInESS as well
+         logging.debug("AC Loads (cleared): " + str(acLoadsCleared))
+         logging.debug("PV in: " + str(availablePVOnGrid)) #PV In will contain hybrid discharge. 
+         logging.debug("Bat charge Hybrid: " + str(batteryChargeHybrid)) 
+         logging.debug("Bat charge Victron: " + str(vicBatCharge))
 
-       # Total Available overhead for VIC Charge is: 
-       # pvOnGrid
-       # minus Loads
-       # plus Amount Hybrid Batterie is charging
-       # plus Amount vic Batterie is charging
-       totalOverhead = availablePVOnGrid - allLoadsAC + batteryChargeHybrid + vicBatCharge
-       logging.debug("Total available overhead: " + str(totalOverhead)) 
-       
-       if (self._dbusservice['/Initialized'] == 0):
-         logging.warn("Depending services not yet initialized. Injecting: " + str(targetPointAC))
-         finalInjectionValue = targetPointAC
+       virtuallyAvailableEnergy = availablePVOnGrid - acLoadsCleared - acOutESS + max(batteryChargeHybrid, 0) + max(vicBatCharge, 0) + min(batteryChargeHybrid, 0)
+       additionalChargeDesired = min(virtuallyAvailableEnergy * pvOverheadShare, pvOverheadLimit) - vicBatCharge
+       finalInjectionValue = min(additionalChargeDesired * -1, acInESS)
 
-       elif (pvOverheadShare == 0):
-         if (currentCycleIndex == 100):
-           logging.info("! No pvOverheadShare configured. Injecting: " + str(targetPointAC))
-         else:
-           logging.debug("! No pvOverheadShare configured. Injecting: " + str(targetPointAC))
-         
-         finalInjectionValue = targetPointAC
-
-       elif ((availablePVOnGrid + batteryChargeHybrid) < 100 or (availablePVOnGrid + batteryChargeHybrid) < allLoadsAC):
-         #TODO: Requires a mechanism to avoid the available Overhead is raising above 100 as soon as feed in starts. Maybe a 10,15 minute lock?
-         if (currentCycleIndex == 100):
-           logging.info("! No pvOverheadShare configured. Injecting: " + str(targetPointAC))
-         else:
-           logging.debug("! No pvOverheadShare configured. Injecting: " + str(targetPointAC))
-
-         finalInjectionValue = targetPointAC
-
-       else:
-         #TODO: Need to handle battery full and PV Available.
-         maxPowerToSneak = min(pvOverheadLimit, totalOverhead * pvOverheadShare)
-
-         if (maxPowerToSneak<0):
-           maxPowerToSneak=0
-
-         diffChargeRequired = maxPowerToSneak - vicBatCharge
-
-         if (currentCycleIndex == 100):
-           logging.info("Max power for subgrid charge: " + str(maxPowerToSneak))
-           logging.info("Additional Charge required: " + str(diffChargeRequired))
-         else:
-           logging.debug("Max power for subgrid charge: " + str(maxPowerToSneak))
-           logging.debug("Additional Charge required: " + str(diffChargeRequired))
-
-         finalInjectionValue = diffChargeRequired * -1
-         
        if (currentCycleIndex == 100):
-         logging.info("==> Final InjectionValue: " + str(finalInjectionValue))
+         logging.info("=> Virtual available E: " + str(virtuallyAvailableEnergy))
+         logging.info("==> Vic Charge Change: " + str(additionalChargeDesired))
+         logging.info("===> Final InjectionValue: " + str(finalInjectionValue))
        else:
-         logging.debug("==> Final InjectionValue: " + str(finalInjectionValue))
+         logging.debug("=> Virtual available E: " + str(virtuallyAvailableEnergy))
+         logging.debug("==> Vic Charge Change: " + str(additionalChargeDesired))
+         logging.debug("===> Final InjectionValue: " + str(finalInjectionValue))
 
        #set Voltages
        self._dbusservice['/Ac/L1/Voltage'] = float(meter_data['Body']['Data']['Voltage_AC_Phase_1'])
